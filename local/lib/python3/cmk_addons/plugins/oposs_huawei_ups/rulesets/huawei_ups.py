@@ -78,7 +78,7 @@ def _upper_lower_levels(title_upper, title_lower, unit, default_upper, default_l
 rule_spec_oposs_huawei_ups_ambient_temperature = CheckParameters(
     name="oposs_huawei_ups_ambient_temperature",
     title=Title("Huawei UPS Ambient Temperature"),
-    topic=Topic.ENVIRONMENT,
+    topic=Topic.ENVIRONMENTAL,
     parameter_form=lambda: _upper_levels("Upper levels", "\u00b0C", (40.0, 50.0)),
     condition=HostCondition(),
 )
@@ -86,7 +86,7 @@ rule_spec_oposs_huawei_ups_ambient_temperature = CheckParameters(
 rule_spec_oposs_huawei_ups_device_temperature = CheckParameters(
     name="oposs_huawei_ups_device_temperature",
     title=Title("Huawei UPS Device Temperature"),
-    topic=Topic.ENVIRONMENT,
+    topic=Topic.ENVIRONMENTAL,
     parameter_form=lambda: _upper_levels("Upper levels", "\u00b0C", (60.0, 70.0)),
     condition=HostCondition(),
 )
@@ -94,7 +94,7 @@ rule_spec_oposs_huawei_ups_device_temperature = CheckParameters(
 rule_spec_oposs_huawei_ups_battery_temperature = CheckParameters(
     name="oposs_huawei_ups_battery_temperature",
     title=Title("Huawei UPS Battery Temperature"),
-    topic=Topic.ENVIRONMENT,
+    topic=Topic.ENVIRONMENTAL,
     parameter_form=lambda: _upper_levels("Upper levels", "\u00b0C", (60.0, 70.0)),
     condition=HostCondition(),
 )
@@ -104,7 +104,7 @@ rule_spec_oposs_huawei_ups_battery_temperature = CheckParameters(
 rule_spec_oposs_huawei_ups_ambient_humidity = CheckParameters(
     name="oposs_huawei_ups_ambient_humidity",
     title=Title("Huawei UPS Ambient Humidity"),
-    topic=Topic.ENVIRONMENT,
+    topic=Topic.ENVIRONMENTAL,
     parameter_form=lambda: _upper_levels("Upper levels", "%", (83.0, 86.0)),
     condition=HostCondition(),
 )
