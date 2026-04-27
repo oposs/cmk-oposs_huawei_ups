@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### New
 
 ### Changed
-
-### Fixed
-
-## 0.2.1 - 2026-04-27
+- Removed the metric translation for the legacy `output_frequency` check.
+  That v1 check read the wrong SNMP OID (`hwUpsInputCurrentC` instead of
+  the actual output frequency); merging the bogus historical values into
+  the now-correct Output Frequency graph would visually corrupt it. The
+  legacy `frequency.rrd` for that service stays on disk but is no longer
+  queried.
 
 ### Fixed
 - Metric translations for legacy `huawei_ups_*` history are now keyed on
@@ -21,19 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Previously they were keyed on the now-uninstalled legacy commands and
   Checkmk's translation lookup (an exact match on the live service's
   current check command) silently missed them — leaving the legacy RRD
-  data orphaned in the per-service directories. After upgrading to
-  v0.2.1 + reloading (`cmk -R` / `omd restart apache`), graphs of the new
+  data orphaned in the per-service directories. After upgrading and
+  reloading (`cmk -R` / `omd restart apache`), graphs of the new
   `oposs_huawei_*` services on hosts that previously ran the legacy
   oegig plugin will show one continuous line spanning the pre- and
   post-upgrade history.
-
-### Changed
-- Removed the metric translation for the legacy `output_frequency` check.
-  That v1 check read the wrong SNMP OID (`hwUpsInputCurrentC` instead of
-  the actual output frequency); merging the bogus historical values into
-  the now-correct Output Frequency graph would visually corrupt it. The
-  legacy `frequency.rrd` for that service stays on disk but is no longer
-  queried.
 
 ## 0.2.0 - 2026-04-27
 ### Changed
