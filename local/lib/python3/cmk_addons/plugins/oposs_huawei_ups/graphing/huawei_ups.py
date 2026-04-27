@@ -95,14 +95,14 @@ metric_oposs_huawei_backup_time = Metric(
 graph_oposs_huawei_temperature = Graph(
     name="oposs_huawei_temperature",
     title=Title("Huawei UPS Temperature"),
-    simple_lines=["oposs_huawei_temperature"],
+    compound_lines=["oposs_huawei_temperature"],
     minimal_range=MinimalRange(lower=0, upper=80),
 )
 
 graph_oposs_huawei_humidity = Graph(
     name="oposs_huawei_humidity",
     title=Title("Huawei UPS Humidity"),
-    simple_lines=["oposs_huawei_humidity"],
+    compound_lines=["oposs_huawei_humidity"],
     minimal_range=MinimalRange(lower=0, upper=100),
 )
 
@@ -115,7 +115,8 @@ graph_oposs_huawei_voltage = Graph(
 graph_oposs_huawei_current = Graph(
     name="oposs_huawei_current",
     title=Title("Huawei UPS Current"),
-    simple_lines=["oposs_huawei_current"],
+    compound_lines=["oposs_huawei_current"],
+    minimal_range=MinimalRange(lower=0, upper=1),
 )
 
 graph_oposs_huawei_frequency = Graph(
@@ -128,33 +129,36 @@ graph_oposs_huawei_frequency = Graph(
 graph_oposs_huawei_active_power = Graph(
     name="oposs_huawei_active_power",
     title=Title("Huawei UPS Active Power"),
-    simple_lines=["oposs_huawei_active_power"],
+    compound_lines=["oposs_huawei_active_power"],
+    minimal_range=MinimalRange(lower=0, upper=10),
 )
 
 graph_oposs_huawei_apparent_power = Graph(
     name="oposs_huawei_apparent_power",
     title=Title("Huawei UPS Apparent Power"),
-    simple_lines=["oposs_huawei_apparent_power"],
+    compound_lines=["oposs_huawei_apparent_power"],
+    minimal_range=MinimalRange(lower=0, upper=10),
 )
 
 graph_oposs_huawei_load_pct = Graph(
     name="oposs_huawei_load_pct",
     title=Title("Huawei UPS Load"),
-    simple_lines=["oposs_huawei_load_pct"],
+    compound_lines=["oposs_huawei_load_pct"],
     minimal_range=MinimalRange(lower=0, upper=100),
 )
 
 graph_oposs_huawei_battery_pct = Graph(
     name="oposs_huawei_battery_pct",
     title=Title("Huawei UPS Battery Capacity"),
-    simple_lines=["oposs_huawei_battery_pct"],
+    compound_lines=["oposs_huawei_battery_pct"],
     minimal_range=MinimalRange(lower=0, upper=100),
 )
 
 graph_oposs_huawei_backup_time = Graph(
     name="oposs_huawei_backup_time",
     title=Title("Huawei UPS Backup Time"),
-    simple_lines=["oposs_huawei_backup_time"],
+    compound_lines=["oposs_huawei_backup_time"],
+    minimal_range=MinimalRange(lower=0, upper=60),
 )
 
 # Perfometers

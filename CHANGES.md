@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### New
 
 ### Changed
+- Render zero-anchored single-metric graphs as filled areas instead of thin
+  lines for better readability (voltage and frequency graphs remain lines
+  because their y-axis baseline is non-zero)
 
 ### Fixed
 
