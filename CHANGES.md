@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### New
 
 ### Changed
+
+### Fixed
+
+## 0.2.1 - 2026-04-27
+### Changed
 - Removed the metric translation for the legacy `output_frequency` check.
   That v1 check read the wrong SNMP OID (`hwUpsInputCurrentC` instead of
   the actual output frequency); merging the bogus historical values into
