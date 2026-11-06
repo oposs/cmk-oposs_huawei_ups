@@ -292,6 +292,7 @@ NORMAL = [
     ("Phase A Output Load", "oposs_huawei_load_pct", "235", 23.5, "Phase A Output Load: 23.5 %"),
     ("Battery Voltage", "oposs_huawei_voltage", "2160", 216.0, "Battery Voltage: 216.0 V"),
     ("Battery Current", "oposs_huawei_current", "-45", -4.5, "Battery Current: -4.5 A"),
+    ("Battery Capacity Left", "oposs_huawei_battery_pct", "87", 87.0, "Battery Capacity Left: 87.0 %"),
     ("Battery Backup Time", "oposs_huawei_backup_time", "5400", 5400.0, "Battery Backup Time: 1.5h"),
     ("Battery Temperature", "oposs_huawei_temperature", "255", 25.5, "Battery Temperature: 26 °C"),
 ]
@@ -322,6 +323,7 @@ LEVELS = [
     ("Output Frequency", "4880", "4750", "below 49.00 Hz/48.00 Hz"),
     ("Output Frequency", "5120", "5250", "at 51.00 Hz/52.00 Hz"),
     ("Phase C Output Load", "850", "950", "at 80.0 %/90.0 %"),
+    ("Battery Capacity Left", "12", "8", "below 15.0 %/10.0 %"),
     ("Battery Backup Time", "900", "300", "below 0.3h/0.2h"),
     ("Battery Temperature", "650", "750", "at 60 \u00b0C/70 \u00b0C"),
 ]
@@ -365,7 +367,6 @@ def test_levels_switched_off_in_a_rule(check):
     assert _result(out).state == State.OK
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: Battery Capacity Left scales whole percent by 0.1, a full battery shows 10.0 % WARN")
 @pytest.mark.parametrize("raw, state, summary", [
     ("100", State.OK, "Battery Capacity Left: 100.0 %"),
     ("12", State.WARN, "Battery Capacity Left: 12.0 % (warn/crit below 15.0 %/10.0 %)"),
@@ -378,11 +379,10 @@ def test_battery_capacity_left_in_whole_percent(check, raw, state, summary):
     assert _metric(out).value == pytest.approx(float(raw))
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a non-numeric SNMP value crashes the check instead of giving a result")
 @pytest.mark.parametrize("raw", ["", "N/A"])
 def test_garbage_value_does_not_crash(check, raw):
     _, out = _run(check, "Battery Temperature", [[raw]])
-    assert _result(out).state == State.UNKNOWN
+    assert out == [Result(state=State.UNKNOWN, summary=f"Device sent a non-numeric value: {raw!r}")]
 
 
 # --- version ----------------------------------------------------------------

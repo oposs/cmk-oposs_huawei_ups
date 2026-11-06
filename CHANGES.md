@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   text, which contradicted them.
 
 ### Fixed
+- When the UPS sent a non-numeric value for a measurement such as
+  "Battery Temperature", the service crashed and asked for a crash report.
+  It now goes UNKNOWN with "Device sent a non-numeric value: '...'".
+- "Battery Capacity Left" showed a tenth of the real charge, so a full
+  battery read 10.0 % and was WARN, and 12 % was CRIT. It now shows the
+  percentage the UPS reports; the graph values from before the update
+  stay 10 times too low.
 
 ## 0.2.1 - 2026-04-27
 ### Changed
