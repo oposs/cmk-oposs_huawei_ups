@@ -2,9 +2,10 @@
 
 Every target in the check module becomes one SNMP section that fetches a
 single column, so the string table of a one-module UPS2000 is one row with
-one raw integer, e.g. [["2301"]] for 230.1 V. The device reports voltages,
-currents, temperatures, humidity and load in 0.1 units, frequencies in
-0.01 Hz, power in 0.1 kW / 0.1 kVA and the backup time in seconds.
+one raw integer, e.g. [["2301"]] for 230.1 V. Per HUAWEI-UPS-MIB the device
+reports voltages, currents, temperatures and load in 0.1 units, frequencies
+in 0.01 Hz, power in 0.1 kW / 0.1 kVA, the battery capacity left in whole
+percent and the backup time in seconds.
 """
 
 import importlib.util
@@ -135,6 +136,29 @@ def test_service_reads_its_oid(check, service):
     (tree,) = _sections(check)[plugin.name].fetch
     (oid,) = tree.oids
     assert f"{tree.base}.{oid.column}" == OIDS[service]
+
+
+# Columns of HUAWEI-UPS-MIB (mibs.observium.org) the plugin reads, plus the
+# UPS-MIB upsAlarmsPresent. hwUpsSystem (.1.1) holds only .1.1.1.x leaves.
+MIB_OIDS = {
+    ".1.3.6.1.2.1.33.1.6.1",
+    OB + "2.101.1.1", OB + "2.101.1.3", OB + "2.101.1.4",
+    *(OB + f"3.100.1.{i}" for i in range(1, 8)),
+    *(OB + f"4.100.1.{i}" for i in range(1, 17)),
+    *(OB + f"6.100.1.{i}" for i in (1, 2, 3, 4, 6)),
+}
+
+NOT_IN_MIB = pytest.mark.xfail(
+    strict=True, reason="BUG: Ambient Temperature/Humidity read 1.1.6.0/1.1.7.0, which HUAWEI-UPS-MIB does not define")
+
+
+@pytest.mark.parametrize("service", [
+    pytest.param(s, marks=NOT_IN_MIB) if s.startswith("Ambient") else s for s in SERVICES
+])
+def test_service_reads_an_oid_of_the_mib(check, service):
+    plugin = _plugins(check)[service]
+    (tree,) = _sections(check)[plugin.name].fetch
+    assert f"{tree.base}.{tree.oids[0].column}" in MIB_OIDS
 
 
 def test_output_frequency_does_not_read_input_current_c(check):
@@ -268,7 +292,6 @@ NORMAL = [
     ("Phase A Output Load", "oposs_huawei_load_pct", "235", 23.5, "Phase A Output Load: 23.5 %"),
     ("Battery Voltage", "oposs_huawei_voltage", "2160", 216.0, "Battery Voltage: 216.0 V"),
     ("Battery Current", "oposs_huawei_current", "-45", -4.5, "Battery Current: -4.5 A"),
-    ("Battery Capacity Left", "oposs_huawei_battery_pct", "1000", 100.0, "Battery Capacity Left: 100.0 %"),
     ("Battery Backup Time", "oposs_huawei_backup_time", "5400", 5400.0, "Battery Backup Time: 1.5h"),
     ("Battery Temperature", "oposs_huawei_temperature", "255", 25.5, "Battery Temperature: 26 °C"),
 ]
@@ -299,7 +322,6 @@ LEVELS = [
     ("Output Frequency", "4880", "4750", "below 49.00 Hz/48.00 Hz"),
     ("Output Frequency", "5120", "5250", "at 51.00 Hz/52.00 Hz"),
     ("Phase C Output Load", "850", "950", "at 80.0 %/90.0 %"),
-    ("Battery Capacity Left", "120", "80", "below 15.0 %/10.0 %"),
     ("Battery Backup Time", "900", "300", "below 0.3h/0.2h"),
     ("Battery Temperature", "650", "750", "at 60 \u00b0C/70 \u00b0C"),
 ]
@@ -341,6 +363,19 @@ def test_levels_switched_off_in_a_rule(check):
     params = {"levels_upper": ("no_levels", None)}
     _, out = _run(check, "Ambient Temperature", [["999"]], params)
     assert _result(out).state == State.OK
+
+
+@pytest.mark.xfail(strict=True, reason="BUG: Battery Capacity Left scales whole percent by 0.1, a full battery shows 10.0 % WARN")
+@pytest.mark.parametrize("raw, state, summary", [
+    ("100", State.OK, "Battery Capacity Left: 100.0 %"),
+    ("12", State.WARN, "Battery Capacity Left: 12.0 % (warn/crit below 15.0 %/10.0 %)"),
+    ("8", State.CRIT, "Battery Capacity Left: 8.0 % (warn/crit below 15.0 %/10.0 %)"),
+])
+def test_battery_capacity_left_in_whole_percent(check, raw, state, summary):
+    # hwUpsBatteryCapacityLeft is an integer 0..100 in %.
+    _, out = _run(check, "Battery Capacity Left", [[raw]])
+    assert _result(out) == Result(state=state, summary=summary)
+    assert _metric(out).value == pytest.approx(float(raw))
 
 
 @pytest.mark.xfail(strict=True, reason="BUG: a non-numeric SNMP value crashes the check instead of giving a result")
