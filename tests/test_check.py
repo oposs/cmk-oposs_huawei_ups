@@ -378,11 +378,10 @@ def test_battery_capacity_left_in_whole_percent(check, raw, state, summary):
     assert _metric(out).value == pytest.approx(float(raw))
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: a non-numeric SNMP value crashes the check instead of giving a result")
 @pytest.mark.parametrize("raw", ["", "N/A"])
 def test_garbage_value_does_not_crash(check, raw):
     _, out = _run(check, "Battery Temperature", [[raw]])
-    assert _result(out).state == State.UNKNOWN
+    assert out == [Result(state=State.UNKNOWN, summary=f"Device sent a non-numeric value: {raw!r}")]
 
 
 # --- version ----------------------------------------------------------------

@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   text, which contradicted them.
 
 ### Fixed
+- When the UPS sent a non-numeric value for a measurement such as
+  "Battery Temperature", the service crashed and asked for a crash report.
+  It now goes UNKNOWN with "Device sent a non-numeric value: '...'".
 
 ## 0.2.1 - 2026-04-27
 ### Changed

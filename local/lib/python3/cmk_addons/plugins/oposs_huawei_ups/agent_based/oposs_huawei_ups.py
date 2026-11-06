@@ -356,7 +356,15 @@ def _make_plugins(cfg):
         def check_fn(params, section):
             if not section:
                 return
-            value = cfg.get("scale", 1.0) * float(section.value)
+            try:
+                raw = float(section.value)
+            except ValueError:
+                yield Result(
+                    state=State.UNKNOWN,
+                    summary=f"Device sent a non-numeric value: {section.value!r}",
+                )
+                return
+            value = cfg.get("scale", 1.0) * raw
             yield from check_levels(
                 value=value,
                 levels_upper=params.get("levels_upper"),
