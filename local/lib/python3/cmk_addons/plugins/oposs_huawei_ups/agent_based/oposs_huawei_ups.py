@@ -1,11 +1,7 @@
-#!/usr/bin/env python3
-
 from collections import namedtuple
 
 from cmk.agent_based.v2 import (
     CheckPlugin,
-    CheckResult,
-    DiscoveryResult,
     Result,
     Service,
     SimpleSNMPSection,
@@ -70,8 +66,7 @@ targets = [
         "keys": ["upsAlarmPresent"],
         "result": lambda obj, cfg: Result(
             state=State.OK if obj.upsAlarmPresent == "0" else State.CRIT,
-            summary="%s Alarms present - check online status!"
-            % obj.upsAlarmPresent
+            summary=f"{obj.upsAlarmPresent} Alarms present - check online status!"
             if obj.upsAlarmPresent != "0"
             else "No Alarms",
         ),
@@ -86,7 +81,7 @@ targets = [
             else State.CRIT
             if obj.method == "1"
             else State.OK,
-            summary=POWER_SUPPLY_MAP.get(obj.method, "unknown(%s)" % obj.method),
+            summary=POWER_SUPPLY_MAP.get(obj.method, f"unknown({obj.method})"),
         ),
     },
     {
@@ -99,7 +94,7 @@ targets = [
             else State.CRIT
             if obj.state == "1"
             else State.OK,
-            summary=BATTERY_STATE_MAP.get(obj.state, "unknown(%s)" % obj.state),
+            summary=BATTERY_STATE_MAP.get(obj.state, f"unknown({obj.state})"),
         ),
     },
     # --- Environment ---
@@ -109,7 +104,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_temperature",
-        "render_func": lambda v: "%.0f \u00b0C" % v,
+        "render_func": lambda v: f"{v:.0f} \u00b0C",
         "default_params": {"levels_upper": ("fixed", (40.0, 50.0))},
         "boundaries": (0.0, 120.0),
         "ruleset_name": "oposs_huawei_ups_ambient_temperature",
@@ -120,7 +115,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_humidity",
-        "render_func": lambda v: "%.0f %%" % v,
+        "render_func": lambda v: f"{v:.0f} %",
         "default_params": {"levels_upper": ("fixed", (83.0, 86.0))},
         "boundaries": (0.0, 100.0),
         "ruleset_name": "oposs_huawei_ups_ambient_humidity",
@@ -132,7 +127,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_temperature",
-        "render_func": lambda v: "%.0f \u00b0C" % v,
+        "render_func": lambda v: f"{v:.0f} \u00b0C",
         "default_params": {"levels_upper": ("fixed", (60.0, 70.0))},
         "boundaries": (0.0, 100.0),
         "ruleset_name": "oposs_huawei_ups_device_temperature",
@@ -140,12 +135,12 @@ targets = [
     # --- Input Voltage (per-phase) ---
     *(
         {
-            "name": "Phase %s Input Voltage" % name,
-            "query": SNMPTree(base=OB + "3.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Input Voltage",
+            "query": SNMPTree(base=OB + "3.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 0.1,
             "metric_name": "oposs_huawei_voltage",
-            "render_func": lambda v: "%.0f V" % v,
+            "render_func": lambda v: f"{v:.0f} V",
             "default_params": {"levels_lower": ("fixed", (210.0, 180.0))},
             "boundaries": (0.0, 250.0),
             "ruleset_name": "oposs_huawei_ups_input_voltage",
@@ -159,7 +154,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.01,
         "metric_name": "oposs_huawei_frequency",
-        "render_func": lambda v: "%.2f Hz" % v,
+        "render_func": lambda v: f"{v:.2f} Hz",
         "default_params": {
             "levels_lower": ("fixed", (49.0, 48.0)),
             "levels_upper": ("fixed", (51.0, 52.0)),
@@ -170,12 +165,12 @@ targets = [
     # --- Input Current (per-phase, info only) ---
     *(
         {
-            "name": "Phase %s Input Current" % name,
-            "query": SNMPTree(base=OB + "3.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Input Current",
+            "query": SNMPTree(base=OB + "3.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 0.1,
             "metric_name": "oposs_huawei_current",
-            "render_func": lambda v: "%.0f A" % v,
+            "render_func": lambda v: f"{v:.0f} A",
             "default_params": {},
             "boundaries": (0.0, 1000.0),
         }
@@ -184,12 +179,12 @@ targets = [
     # --- Output Voltage (per-phase) ---
     *(
         {
-            "name": "Phase %s Output Voltage" % name,
-            "query": SNMPTree(base=OB + "4.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Output Voltage",
+            "query": SNMPTree(base=OB + "4.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 0.1,
             "metric_name": "oposs_huawei_voltage",
-            "render_func": lambda v: "%.0f V" % v,
+            "render_func": lambda v: f"{v:.0f} V",
             "default_params": {"levels_lower": ("fixed", (210.0, 180.0))},
             "boundaries": (0.0, 250.0),
             "ruleset_name": "oposs_huawei_ups_output_voltage",
@@ -199,12 +194,12 @@ targets = [
     # --- Output Current (per-phase, info only) ---
     *(
         {
-            "name": "Phase %s Output Current" % name,
-            "query": SNMPTree(base=OB + "4.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Output Current",
+            "query": SNMPTree(base=OB + "4.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 0.1,
             "metric_name": "oposs_huawei_current",
-            "render_func": lambda v: "%.0f A" % v,
+            "render_func": lambda v: f"{v:.0f} A",
             "default_params": {},
             "boundaries": (0.0, 1000.0),
         }
@@ -217,7 +212,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.01,
         "metric_name": "oposs_huawei_frequency",
-        "render_func": lambda v: "%.2f Hz" % v,
+        "render_func": lambda v: f"{v:.2f} Hz",
         "default_params": {
             "levels_lower": ("fixed", (49.0, 48.0)),
             "levels_upper": ("fixed", (51.0, 52.0)),
@@ -228,8 +223,8 @@ targets = [
     # --- Output Active Power (per-phase, info only) ---
     *(
         {
-            "name": "Phase %s Output Active Power" % name,
-            "query": SNMPTree(base=OB + "4.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Output Active Power",
+            "query": SNMPTree(base=OB + "4.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 100.0,
             "metric_name": "oposs_huawei_active_power",
@@ -242,8 +237,8 @@ targets = [
     # --- Output Apparent Power (per-phase, info only) ---
     *(
         {
-            "name": "Phase %s Output Apparent Power" % name,
-            "query": SNMPTree(base=OB + "4.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Output Apparent Power",
+            "query": SNMPTree(base=OB + "4.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 100.0,
             "metric_name": "oposs_huawei_apparent_power",
@@ -256,12 +251,12 @@ targets = [
     # --- Output Load (per-phase) ---
     *(
         {
-            "name": "Phase %s Output Load" % name,
-            "query": SNMPTree(base=OB + "4.100", oids=["1.%s" % oid]),
+            "name": f"Phase {name} Output Load",
+            "query": SNMPTree(base=OB + "4.100", oids=[f"1.{oid}"]),
             "keys": ["value"],
             "scale": 0.1,
             "metric_name": "oposs_huawei_load_pct",
-            "render_func": lambda v: "%.1f %%" % v,
+            "render_func": lambda v: f"{v:.1f} %",
             "default_params": {"levels_upper": ("fixed", (80.0, 90.0))},
             "boundaries": (0.0, 500.0),
             "ruleset_name": "oposs_huawei_ups_output_load",
@@ -275,7 +270,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_voltage",
-        "render_func": lambda v: "%.1f V" % v,
+        "render_func": lambda v: f"{v:.1f} V",
         "default_params": {},
         "boundaries": (0.0, 2000.0),
     },
@@ -285,7 +280,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_current",
-        "render_func": lambda v: "%.1f A" % v,
+        "render_func": lambda v: f"{v:.1f} A",
         "default_params": {},
         "boundaries": (-300.0, 300.0),
     },
@@ -295,7 +290,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_battery_pct",
-        "render_func": lambda v: "%.1f %%" % v,
+        "render_func": lambda v: f"{v:.1f} %",
         "default_params": {"levels_lower": ("fixed", (15.0, 10.0))},
         "boundaries": (0.0, 100.0),
         "ruleset_name": "oposs_huawei_ups_battery_capacity",
@@ -317,7 +312,7 @@ targets = [
         "keys": ["value"],
         "scale": 0.1,
         "metric_name": "oposs_huawei_temperature",
-        "render_func": lambda v: "%.0f \u00b0C" % v,
+        "render_func": lambda v: f"{v:.0f} \u00b0C",
         "default_params": {"levels_upper": ("fixed", (60.0, 70.0))},
         "boundaries": (0.0, 80.0),
         "ruleset_name": "oposs_huawei_ups_battery_temperature",
@@ -332,7 +327,7 @@ targets = [
 
 def _make_plugins(cfg):
     """Generate SimpleSNMPSection + CheckPlugin module-level variables."""
-    check_key = "oposs_huawei_ups_%s" % cfg["name"].lower().replace(" ", "_")
+    check_key = "oposs_huawei_ups_{}".format(cfg["name"].lower().replace(" ", "_"))
     obj_class = namedtuple(check_key, cfg["keys"])
 
     def parse_fn(string_table):
@@ -374,14 +369,14 @@ def _make_plugins(cfg):
         if "ruleset_name" in cfg:
             cp_kwargs["check_ruleset_name"] = cfg["ruleset_name"]
 
-    globals()["snmp_section_%s" % check_key] = SimpleSNMPSection(
+    globals()[f"snmp_section_{check_key}"] = SimpleSNMPSection(
         name=check_key,
         detect=DETECT_HUAWEI_UPS,
         parse_function=parse_fn,
         fetch=cfg["query"],
     )
 
-    globals()["check_plugin_%s" % check_key] = CheckPlugin(
+    globals()[f"check_plugin_{check_key}"] = CheckPlugin(
         name=check_key,
         sections=[check_key],
         service_name=cfg["name"],
