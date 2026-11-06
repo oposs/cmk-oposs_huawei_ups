@@ -9,7 +9,8 @@ Migrated from oegig-plugins to Checkmk 2.3.x v2 API.
 - `local/lib/python3/cmk_addons/plugins/oposs_huawei_ups/graphing/huawei_ups.py` — metric, graph, perfometer definitions
 - `local/lib/python3/cmk_addons/plugins/oposs_huawei_ups/rulesets/huawei_ups.py` — WATO ruleset definitions
 - `.mkp-builder.ini` — MKP packaging config
-- `.github/workflows/release.yml` — automated release workflow
+- `.github/workflows/` — CI and the release flow, callers of the oposs/repo-infra workflows (`ci.yml`, `changelog.yml`, `release-pr.yml`, `release-build.yml`, `release-publish.yml`)
+- `tests/` — pytest suite against the real Checkmk 2.3.0 API (`pytest -q`)
 
 ## Architecture
 
