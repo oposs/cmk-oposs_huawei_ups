@@ -292,7 +292,7 @@ targets = [
         "name": "Battery Capacity Left",
         "query": SNMPTree(base=OB + "6.100", oids=["1.3"]),
         "keys": ["value"],
-        "scale": 0.1,
+        "scale": 1.0,
         "metric_name": "oposs_huawei_battery_pct",
         "render_func": lambda v: f"{v:.1f} %",
         "default_params": {"levels_lower": ("fixed", (15.0, 10.0))},
