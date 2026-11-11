@@ -68,10 +68,12 @@ def emitted(check):
         if not isinstance(plugin, CheckPlugin):
             continue
         section = sections[plugin.name].parse_function([[["100"]]])
+        # Phase B and C plugins also get the UPS-MIB line counts, here absent.
+        args = [section] + [None] * (len(plugin.sections) - 1)
         if plugin.check_default_parameters is None:
-            results = plugin.check_function(section)
+            results = plugin.check_function(*args)
         else:
-            results = plugin.check_function(plugin.check_default_parameters, section)
+            results = plugin.check_function(plugin.check_default_parameters, *args)
         out[plugin.name] = [m.name for m in results if isinstance(m, Metric)]
     return out
 

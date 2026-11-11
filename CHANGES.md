@@ -12,11 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 ### Fixed
+- On a single-phase UPS2000, "Phase B/C Input Voltage" and "Phase B/C
+  Output Voltage" were CRIT with 0 V, and the other phase B and C services
+  showed 0. A service discovery now creates phase B and C services only when
+  the UPS reports three input or output lines, or no line count at all, so
+  after the update and a rediscovery a "Disabled services" rule for them is
+  no longer needed on a single-phase UPS.
 - On a UPS2000 without a battery sensor, "Battery Temperature" was CRIT
   with 214748364.7 °C and "Battery Current" showed 214748364.7 A. The UPS
-  sends 2147483647 for a value it does not have: the services now go
-  UNKNOWN with "Device has no value for this measurement (2147483647)", and
-  a service discovery no longer creates them.
+  sends 2147483647 for a value it does not have: a service discovery no
+  longer creates these services, so their "Disabled services" rule is no
+  longer needed, and an existing one goes UNKNOWN with "Device has no value
+  for this measurement (2147483647)".
 
 ## 0.4.0 - 2026-11-11
 ### Changed

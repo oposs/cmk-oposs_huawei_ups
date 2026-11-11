@@ -2,16 +2,17 @@
 
 tests/data/ups2000_3kva.walk holds the OIDs the plugin fetches plus sysDescr,
 sysObjectID and the two UPS-MIB detection OIDs, taken from a production
-device and anonymized. The UPS is single-phase: phases B and C send 0, the
-input current columns are missing, and battery current and temperature are
-2147483647 because no sensor is installed.
+device and anonymized. The UPS is single-phase: upsInputNumLines and
+upsOutputNumLines are 1, phases B and C send 0, the input current columns
+are missing, and battery current and temperature are 2147483647 because no
+sensor is installed.
 """
 
 import pathlib
 
 import pytest
 from cmk.agent_based.v2 import Metric, Result, Service, State
-from test_check import _detects, _plugins, _sections, check  # noqa: F401
+from test_check import PHASE_BC, _detects, _plugins, _run, _sections, check  # noqa: F401
 
 WALK = pathlib.Path(__file__).resolve().parent / "data/ups2000_3kva.walk"
 
@@ -25,27 +26,34 @@ def _walk():
 
 
 def _rows(tree, walk):
-    """The string table Checkmk builds for one single-column SNMPTree.
+    """The string table Checkmk builds for one SNMPTree.
 
     A column that names a scalar instance (Ambient Temperature fetches
     "6.0") returns that instance, as a walk falls back to a GET.
     """
-    (oid,) = tree.oids
-    column = f"{tree.base}.{oid.column}"
-    return [[value] for key, value in walk.items() if key == column or key.startswith(column + ".")]
+    columns = []
+    for oid in tree.oids:
+        column = f"{tree.base}.{oid.column}"
+        columns.append([v for k, v in walk.items() if k == column or k.startswith(column + ".")])
+    return [list(row) for row in zip(*columns)]
 
 
 def _real(check, service):  # noqa: F811
+    walk = _walk()
+    sections = _sections(check)
     plugin = _plugins(check)[service]
-    (tree,) = _sections(check)[plugin.name].fetch
-    section = _sections(check)[plugin.name].parse_function([_rows(tree, _walk())])
-    discovered = list(plugin.discovery_function(section))
-    params = plugin.check_default_parameters
-    if params is None:
-        out = list(plugin.check_function(section))
-    else:
-        out = list(plugin.check_function(params, section))
-    return discovered, out
+    (tree,) = sections[plugin.name].fetch
+    numlines = None
+    if len(plugin.sections) > 1:
+        (lines_tree,) = sections[check.NUMLINES_SECTION].fetch
+        (numlines,) = _rows(lines_tree, walk)
+    return _run(check, service, _rows(tree, walk), numlines=numlines)
+
+
+def test_real_line_counts(check):  # noqa: F811
+    (tree,) = _sections(check)[check.NUMLINES_SECTION].fetch
+    parsed = _sections(check)[check.NUMLINES_SECTION].parse_function([_rows(tree, _walk())])
+    assert parsed == {"Input": "1", "Output": "1"}
 
 
 def test_detects_the_real_ups2000(check):  # noqa: F811
@@ -68,19 +76,11 @@ DISCOVERED = [
     ("Phase A Output Voltage", State.OK, "Phase A Output Voltage: 230 V", 229.7),
     # UPS-MIB upsOutputCurrent.1 is 13 (0.1 A) as well.
     ("Phase A Output Current", State.OK, "Phase A Output Current: 1 A", 1.3),
-    ("Phase B Output Current", State.OK, "Phase B Output Current: 0 A", 0.0),
-    ("Phase C Output Current", State.OK, "Phase C Output Current: 0 A", 0.0),
     ("Output Frequency", State.OK, "Output Frequency: 49.90 Hz", 49.9),
     ("Phase A Output Active Power", State.OK, "Phase A Output Active Power: 0.10 kW", 100.0),
-    ("Phase B Output Active Power", State.OK, "Phase B Output Active Power: 0.00 kW", 0.0),
-    ("Phase C Output Active Power", State.OK, "Phase C Output Active Power: 0.00 kW", 0.0),
     ("Phase A Output Apparent Power", State.OK, "Phase A Output Apparent Power: 0.2 kVA", 200.0),
-    ("Phase B Output Apparent Power", State.OK, "Phase B Output Apparent Power: 0.0 kVA", 0.0),
-    ("Phase C Output Apparent Power", State.OK, "Phase C Output Apparent Power: 0.0 kVA", 0.0),
     # UPS-MIB upsOutputPercentLoad.1 is 9 %.
     ("Phase A Output Load", State.OK, "Phase A Output Load: 9.0 %", 9.0),
-    ("Phase B Output Load", State.OK, "Phase B Output Load: 0.0 %", 0.0),
-    ("Phase C Output Load", State.OK, "Phase C Output Load: 0.0 %", 0.0),
     # UPS-MIB upsBatteryVoltage is 820 (0.1 V) as well.
     ("Battery Voltage", State.OK, "Battery Voltage: 82.0 V", 82.0),
     # UPS-MIB upsEstimatedChargeRemaining is 100 %.
@@ -100,9 +100,8 @@ def test_real_reading(check, service, state, summary, value):  # noqa: F811
     assert metrics == ([] if value is None else [pytest.approx(value)])
 
 
-@pytest.mark.parametrize("service", [f"Phase {p} Input Current" for p in "ABC"])
-def test_missing_column_creates_no_service(check, service):  # noqa: F811
-    discovered, out = _real(check, service)
+def test_missing_column_creates_no_service(check):  # noqa: F811
+    discovered, out = _real(check, "Phase A Input Current")
     assert discovered == []
     assert out == []
 
@@ -115,20 +114,16 @@ def test_no_value_creates_no_service(check, service):  # noqa: F811
     assert out == [Result(state=State.UNKNOWN, summary="Device has no value for this measurement (2147483647)")]
 
 
-SINGLE_PHASE_VOLTAGES = [f"Phase {p} {d} Voltage" for p in "BC" for d in ("Input", "Output")]
+@pytest.mark.parametrize("service", PHASE_BC)
+def test_single_phase_ups_has_no_phase_b_c_service(check, service):  # noqa: F811
+    # Before, the B/C voltages were discovered with 0 V and CRIT forever.
+    discovered, _ = _real(check, service)
+    assert discovered == []
 
 
-@pytest.mark.parametrize("service", SINGLE_PHASE_VOLTAGES)
-def test_unused_phase_voltage_is_crit_today(check, service):  # noqa: F811
+@pytest.mark.parametrize("service", [f"Phase {p} {d} Voltage" for p in "BC" for d in ("Input", "Output")])
+def test_existing_unused_phase_voltage_stays_crit(check, service):  # noqa: F811
+    # A service from before the update keeps its check until a rediscovery.
     _, out = _real(check, service)
     (result,) = [r for r in out if isinstance(r, Result)]
     assert result.state == State.CRIT
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "OWNER DECISION: a single-phase UPS2000 (UPS-MIB upsInputNumLines.0 and upsOutputNumLines.0 = 1) "
-    "sends 0 V for phases B and C, which discovers four voltage services that are CRIT forever"))
-@pytest.mark.parametrize("service", SINGLE_PHASE_VOLTAGES)
-def test_single_phase_ups_has_no_phase_b_c_voltage_service(check, service):  # noqa: F811
-    discovered, _ = _real(check, service)
-    assert discovered == []

@@ -9,6 +9,7 @@ percent and the backup time in seconds.
 """
 
 import importlib.util
+import inspect
 import json
 import pathlib
 import re
@@ -48,19 +49,32 @@ def _sections(check):
     return {v.name: v for v in vars(check).values() if isinstance(v, SimpleSNMPSection)}
 
 
-def _run(check, service, rows, params=None):
-    """Parse, discover and check one service the way Checkmk does."""
+def _run(check, service, rows, params=None, numlines=None):
+    """Parse, discover and check one service the way Checkmk does.
+
+    numlines is the UPS-MIB row [upsInputNumLines, upsOutputNumLines] that
+    the phase B and C plugins get as a second section; None means the
+    device did not send it.
+    """
     plugin = _plugins(check)[service]
-    (section_name,) = plugin.sections
-    # Checkmk hands the parse function one table per SNMPTree in fetch.
-    section = _sections(check)[section_name].parse_function([rows])
-    discovered = list(plugin.discovery_function(section))
+    sections = _sections(check)
+    # Checkmk hands the parse function one table per SNMPTree in fetch, and
+    # a plugin with one section gets it as `section`, one with several as
+    # section_<name> keywords.
+    own = sections[plugin.sections[0]].parse_function([rows])
+    if len(plugin.sections) == 1:
+        kwargs = {"section": own}
+    else:
+        kwargs = {f"section_{plugin.sections[0]}": own}
+        for extra in plugin.sections[1:]:
+            kwargs[f"section_{extra}"] = sections[extra].parse_function([[] if numlines is None else [numlines]])
+    discovered = list(plugin.discovery_function(**kwargs))
     if params is None:
         params = plugin.check_default_parameters
     if params is None:
-        out = list(plugin.check_function(section))
+        out = list(plugin.check_function(**kwargs))
     else:
-        out = list(plugin.check_function(params, section))
+        out = list(plugin.check_function(params, **kwargs))
     return discovered, out
 
 
@@ -127,7 +141,7 @@ def test_check_names_follow_the_service_names(check):
     # The translations and the RRD directories depend on these names.
     for service, plugin in _plugins(check).items():
         assert plugin.name == "oposs_huawei_ups_" + service.lower().replace(" ", "_")
-        assert plugin.sections == [plugin.name]
+        assert plugin.sections[0] == plugin.name
 
 
 @pytest.mark.parametrize("service", SERVICES)
@@ -173,8 +187,90 @@ def test_output_frequency_does_not_read_input_current_c(check):
 
 
 def test_no_two_services_read_the_same_oid(check):
-    fetched = [f"{t.base}.{t.oids[0].column}" for s in _sections(check).values() for t in s.fetch]
+    fetched = [
+        f"{t.base}.{t.oids[0].column}"
+        for s in _sections(check).values() if s.name != check.NUMLINES_SECTION
+        for t in s.fetch
+    ]
     assert len(fetched) == len(set(fetched)) == len(SERVICES)
+
+
+# --- phases B and C and the UPS-MIB line counts ------------------------------
+
+PHASE_BC = [s for s in SERVICES if s.startswith(("Phase B ", "Phase C "))]
+
+
+def test_line_counts_cost_one_section_with_two_columns(check):
+    (tree,) = _sections(check)[check.NUMLINES_SECTION].fetch
+    assert [f"{tree.base}.{o.column}" for o in tree.oids] == [
+        ".1.3.6.1.2.1.33.1.3.2",  # upsInputNumLines
+        ".1.3.6.1.2.1.33.1.4.3",  # upsOutputNumLines
+    ]
+
+
+def test_only_phase_b_and_c_read_the_line_counts(check):
+    for service, plugin in _plugins(check).items():
+        extra = [check.NUMLINES_SECTION] if service in PHASE_BC else []
+        assert plugin.sections == [plugin.name, *extra], service
+    assert len(PHASE_BC) == 14  # 7 per-phase measurements, phases B and C
+
+
+def _expected_arguments(plugin, with_params):
+    # cmk/base/api/agent_based/register/utils.py validate_function_arguments
+    # in Checkmk 2.3.0 rejects a plugin whose function has other arguments.
+    names = ["params"] if with_params else []
+    if len(plugin.sections) == 1:
+        return names + ["section"]
+    return names + [f"section_{s}" for s in plugin.sections]
+
+
+@pytest.mark.parametrize("service", SERVICES)
+def test_functions_have_the_arguments_checkmk_expects(check, service):
+    plugin = _plugins(check)[service]
+    for function, with_params in (
+        (plugin.discovery_function, False),
+        (plugin.check_function, plugin.check_default_parameters is not None),
+    ):
+        assert inspect.isgeneratorfunction(function)
+        assert list(inspect.signature(function).parameters) == _expected_arguments(plugin, with_params)
+
+
+def _numlines(service, lines):
+    """The UPS-MIB row with `lines` for the direction of `service`."""
+    return [lines, "1"] if " Input " in service else ["1", lines]
+
+
+@pytest.mark.parametrize("service", PHASE_BC)
+def test_phase_b_c_not_discovered_on_a_single_phase_ups(check, service):
+    discovered, _ = _run(check, service, [["0"]], numlines=_numlines(service, "1"))
+    assert discovered == []
+
+
+@pytest.mark.parametrize("service", PHASE_BC)
+def test_phase_b_c_discovered_on_a_three_phase_ups(check, service):
+    # Only the count of the service's own direction matters: the other is 1.
+    discovered, _ = _run(check, service, [["0"]], numlines=_numlines(service, "3"))
+    assert discovered == [Service()]
+
+
+@pytest.mark.parametrize("numlines", [None, ["", ""]], ids=["no-ups-mib-row", "empty-values"])
+@pytest.mark.parametrize("service", PHASE_BC)
+def test_phase_b_c_discovered_without_line_counts(check, service, numlines):
+    discovered, _ = _run(check, service, [["0"]], numlines=numlines)
+    assert discovered == [Service()]
+
+
+@pytest.mark.parametrize("service", [s for s in SERVICES if s.startswith("Phase A ")])
+def test_phase_a_ignores_the_line_counts(check, service):
+    plugin = _plugins(check)[service]
+    assert plugin.sections == [plugin.name]
+
+
+def test_existing_phase_b_service_keeps_its_check(check):
+    # 0 V on phase B stays CRIT, whatever the line count says.
+    for numlines in (None, ["1", "1"], ["3", "3"]):
+        _, out = _run(check, "Phase B Input Voltage", [["0"]], numlines=numlines)
+        assert _result(out).state == State.CRIT, numlines
 
 
 # --- SNMP detection ---------------------------------------------------------
