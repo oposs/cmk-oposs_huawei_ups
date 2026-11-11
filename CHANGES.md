@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 ### Fixed
+- On a UPS2000 without a battery sensor, "Battery Temperature" was CRIT
+  with 214748364.7 °C and "Battery Current" showed 214748364.7 A. The UPS
+  sends 2147483647 for a value it does not have: the services now go
+  UNKNOWN with "Device has no value for this measurement (2147483647)", and
+  a service discovery no longer creates them.
 
 ## 0.4.0 - 2026-11-11
 ### Changed

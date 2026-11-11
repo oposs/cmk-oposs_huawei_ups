@@ -53,6 +53,11 @@ BATTERY_STATE_MAP = {
 }
 
 
+# The UPS sends 2**31-1 for a measurement it does not have, such as the
+# battery temperature and current of a UPS2000 without the optional sensor.
+NO_VALUE = "2147483647"
+
+
 def _mapped_result(mapping, raw):
     state, summary = mapping.get(raw, (State.UNKNOWN, f"unknown({raw})"))
     return Result(state=state, summary=summary)
@@ -336,8 +341,11 @@ def _make_plugins(cfg):
         return None
 
     def discovery_fn(section):
-        if section:
-            yield Service()
+        if not section:
+            return
+        if "result" not in cfg and section.value == NO_VALUE:
+            return
+        yield Service()
 
     if "result" in cfg:
         # State-mapping check — no params
@@ -351,6 +359,12 @@ def _make_plugins(cfg):
         # check_levels check — with params
         def check_fn(params, section):
             if not section:
+                return
+            if section.value == NO_VALUE:
+                yield Result(
+                    state=State.UNKNOWN,
+                    summary=f"Device has no value for this measurement ({NO_VALUE})",
+                )
                 return
             try:
                 raw = float(section.value)

@@ -149,7 +149,10 @@ MIB_OIDS = {
 }
 
 NOT_IN_MIB = pytest.mark.xfail(
-    strict=True, reason="BUG: Ambient Temperature/Humidity read 1.1.6.0/1.1.7.0, which HUAWEI-UPS-MIB does not define")
+    strict=True, reason=(
+        "OPEN: Ambient Temperature/Humidity read hwUpsSysIdent leaves 1.1.1.6.0/1.1.1.7.0, which HUAWEI-UPS-MIB"
+        " does not define. A real UPS2000 3kVA answers them with 195/386 (19.5 °C/38.6 %), but has no battery"
+        " temperature, so it is not proven that a temperature/humidity sensor stands behind them"))
 
 
 @pytest.mark.parametrize("service", [
