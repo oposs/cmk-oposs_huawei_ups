@@ -10,8 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### New
 
 ### Changed
+- "Power Supply Method" is now WARN for "bypass mode", "battery mode" and
+  "battery ECO mode", and "Battery State" is WARN for "discharging"; all
+  four were OK before. A value the UPS sends that the plugin does not know,
+  shown as "unknown(N)", now makes either service UNKNOWN instead of OK.
 
 ### Fixed
+- The performance data of "Phase A/B/C Output Active Power" and "Phase
+  A/B/C Output Apparent Power" gave a range of -1200 to 1200 W, although a
+  UPS2000 phase delivers several kW. The services now send no range.
+- The bar in the Perf-O-Meter column of "Phase A/B/C Output Load" stopped
+  at full at 100 %, so an overloaded UPS at 115 % looked the same as one at
+  100 %. The bar now keeps growing above 100 %.
+- The Perf-O-Meters of "Phase A/B/C Output Load", "Battery Capacity Left"
+  and "Ambient Humidity" no longer have the same names as their metrics,
+  which collides on Checkmk 3.0. The metrics keep their names and their
+  graph history.
 
 ## 0.3.0 - 2026-11-07
 ### New

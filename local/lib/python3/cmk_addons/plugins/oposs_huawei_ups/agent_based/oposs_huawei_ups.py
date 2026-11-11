@@ -28,26 +28,35 @@ DETECT_HUAWEI_UPS = all_of(
     startswith(".1.3.6.1.2.1.33.1.1.2.0", "UPS"),
 )
 
+# raw value -> (state, summary). Running on bypass or on battery is WARN:
+# the load is not protected, or the battery is draining. A value the MIB
+# does not list is UNKNOWN.
 POWER_SUPPLY_MAP = {
-    "0": "UNKNOWN",
-    "1": "no power supply",
-    "2": "bypass mode",
-    "3": "normal mode",
-    "4": "battery mode",
-    "5": "combined mode",
-    "6": "mains ECO mode",
-    "7": "battery ECO mode",
+    "0": (State.UNKNOWN, "UNKNOWN"),
+    "1": (State.CRIT, "no power supply"),
+    "2": (State.WARN, "bypass mode"),
+    "3": (State.OK, "normal mode"),
+    "4": (State.WARN, "battery mode"),
+    "5": (State.OK, "combined mode"),
+    "6": (State.OK, "mains ECO mode"),
+    "7": (State.WARN, "battery ECO mode"),
 }
 
 BATTERY_STATE_MAP = {
-    "0": "UNKNOWN state",
-    "1": "no battery connected",
-    "2": "not charging or discharging",
-    "3": "hibernation",
-    "4": "float charging",
-    "5": "equalized charging",
-    "6": "discharging",
+    "0": (State.UNKNOWN, "UNKNOWN state"),
+    "1": (State.CRIT, "no battery connected"),
+    "2": (State.OK, "not charging or discharging"),
+    "3": (State.OK, "hibernation"),
+    "4": (State.OK, "float charging"),
+    "5": (State.OK, "equalized charging"),
+    "6": (State.WARN, "discharging"),
 }
+
+
+def _mapped_result(mapping, raw):
+    state, summary = mapping.get(raw, (State.UNKNOWN, f"unknown({raw})"))
+    return Result(state=state, summary=summary)
+
 
 # ---------------------------------------------------------------------------
 # Target definitions — each entry generates one SimpleSNMPSection + CheckPlugin
@@ -82,27 +91,13 @@ targets = [
         "name": "Power Supply Method",
         "query": SNMPTree(base=OB + "2.101", oids=["1.1"]),
         "keys": ["method"],
-        "result": lambda obj, cfg: Result(
-            state=State.UNKNOWN
-            if obj.method == "0"
-            else State.CRIT
-            if obj.method == "1"
-            else State.OK,
-            summary=POWER_SUPPLY_MAP.get(obj.method, f"unknown({obj.method})"),
-        ),
+        "result": lambda obj, cfg: _mapped_result(POWER_SUPPLY_MAP, obj.method),
     },
     {
         "name": "Battery State",
         "query": SNMPTree(base=OB + "2.101", oids=["1.3"]),
         "keys": ["state"],
-        "result": lambda obj, cfg: Result(
-            state=State.UNKNOWN
-            if obj.state == "0"
-            else State.CRIT
-            if obj.state == "1"
-            else State.OK,
-            summary=BATTERY_STATE_MAP.get(obj.state, f"unknown({obj.state})"),
-        ),
+        "result": lambda obj, cfg: _mapped_result(BATTERY_STATE_MAP, obj.state),
     },
     # --- Environment ---
     {
@@ -237,7 +232,6 @@ targets = [
             "metric_name": "oposs_huawei_active_power",
             "render_func": lambda v: "%.2f kW" % (v / 1000.0),
             "default_params": {},
-            "boundaries": (-1200.0, 1200.0),
         }
         for name, oid in [("A", "8"), ("B", "9"), ("C", "10")]
     ),
@@ -251,7 +245,6 @@ targets = [
             "metric_name": "oposs_huawei_apparent_power",
             "render_func": lambda v: "%.1f kVA" % (v / 1000.0),
             "default_params": {},
-            "boundaries": (-1200.0, 1200.0),
         }
         for name, oid in [("A", "11"), ("B", "12"), ("C", "13")]
     ),

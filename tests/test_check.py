@@ -244,13 +244,13 @@ def test_present_alarms_are_crit(check):
 @pytest.mark.parametrize("raw, state, summary", [
     ("0", State.UNKNOWN, "UNKNOWN"),
     ("1", State.CRIT, "no power supply"),
-    ("2", State.OK, "bypass mode"),
+    ("2", State.WARN, "bypass mode"),
     ("3", State.OK, "normal mode"),
-    ("4", State.OK, "battery mode"),
+    ("4", State.WARN, "battery mode"),
     ("5", State.OK, "combined mode"),
     ("6", State.OK, "mains ECO mode"),
-    ("7", State.OK, "battery ECO mode"),
-    ("9", State.OK, "unknown(9)"),
+    ("7", State.WARN, "battery ECO mode"),
+    ("9", State.UNKNOWN, "unknown(9)"),
 ])
 def test_power_supply_method(check, raw, state, summary):
     _, out = _run(check, "Power Supply Method", [[raw]])
@@ -264,8 +264,8 @@ def test_power_supply_method(check, raw, state, summary):
     ("3", State.OK, "hibernation"),
     ("4", State.OK, "float charging"),
     ("5", State.OK, "equalized charging"),
-    ("6", State.OK, "discharging"),
-    ("8", State.OK, "unknown(8)"),
+    ("6", State.WARN, "discharging"),
+    ("8", State.UNKNOWN, "unknown(8)"),
 ])
 def test_battery_state(check, raw, state, summary):
     _, out = _run(check, "Battery State", [[raw]])
@@ -341,6 +341,17 @@ def test_default_levels_warn_and_crit(check, service, warn, crit, levels):
 def test_upper_levels_go_into_the_metric(check):
     _, out = _run(check, "Ambient Temperature", [["231"]])
     assert _metric(out) == Metric("oposs_huawei_temperature", 23.1, levels=(40.0, 50.0), boundaries=(0.0, 120.0))
+
+
+@pytest.mark.parametrize("service, metric", [
+    *((f"Phase {p} Output Active Power", "oposs_huawei_active_power") for p in "ABC"),
+    *((f"Phase {p} Output Apparent Power", "oposs_huawei_apparent_power") for p in "ABC"),
+])
+def test_power_metric_has_no_boundaries_that_cut_a_ups2000(check, service, metric):
+    # A UPS2000 phase delivers several kW: raw 80 is 8.0 kW. Boundaries of
+    # +-1200 W put such readings outside the metric's own min/max.
+    _, out = _run(check, service, [["80"]])
+    assert _metric(out) == Metric(metric, 8000.0)
 
 
 @pytest.mark.parametrize("service", [
