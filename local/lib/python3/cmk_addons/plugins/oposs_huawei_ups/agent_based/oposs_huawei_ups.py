@@ -1,3 +1,5 @@
+# Copyright (C) 2025 OETIKER+PARTNER AG - License: GNU General Public License v2
+
 from collections import namedtuple
 
 from cmk.agent_based.v2 import (
@@ -19,7 +21,8 @@ __version__ = "0.3.0"
 # Huawei UPS SNMP OID base
 OB = ".1.3.6.1.4.1.2011.6.174.1."
 
-# SNMP detection: sysDescr starts with "HUAWEI" AND sysName starts with "UPS"
+# SNMP detection (UPS-MIB, RFC 1628): upsIdentManufacturer starts with "HUAWEI"
+# AND upsIdentModel starts with "UPS"
 DETECT_HUAWEI_UPS = all_of(
     startswith(".1.3.6.1.2.1.33.1.1.1.0", "HUAWEI"),
     startswith(".1.3.6.1.2.1.33.1.1.2.0", "UPS"),

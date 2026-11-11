@@ -1,3 +1,5 @@
+# Copyright (C) 2025 OETIKER+PARTNER AG - License: GNU General Public License v2
+
 from cmk.graphing.v1 import Title
 from cmk.graphing.v1.graphs import Graph, MinimalRange
 from cmk.graphing.v1.metrics import (
