@@ -244,13 +244,13 @@ def test_present_alarms_are_crit(check):
 @pytest.mark.parametrize("raw, state, summary", [
     ("0", State.UNKNOWN, "UNKNOWN"),
     ("1", State.CRIT, "no power supply"),
-    ("2", State.OK, "bypass mode"),
+    ("2", State.WARN, "bypass mode"),
     ("3", State.OK, "normal mode"),
-    ("4", State.OK, "battery mode"),
+    ("4", State.WARN, "battery mode"),
     ("5", State.OK, "combined mode"),
     ("6", State.OK, "mains ECO mode"),
-    ("7", State.OK, "battery ECO mode"),
-    ("9", State.OK, "unknown(9)"),
+    ("7", State.WARN, "battery ECO mode"),
+    ("9", State.UNKNOWN, "unknown(9)"),
 ])
 def test_power_supply_method(check, raw, state, summary):
     _, out = _run(check, "Power Supply Method", [[raw]])
@@ -264,8 +264,8 @@ def test_power_supply_method(check, raw, state, summary):
     ("3", State.OK, "hibernation"),
     ("4", State.OK, "float charging"),
     ("5", State.OK, "equalized charging"),
-    ("6", State.OK, "discharging"),
-    ("8", State.OK, "unknown(8)"),
+    ("6", State.WARN, "discharging"),
+    ("8", State.UNKNOWN, "unknown(8)"),
 ])
 def test_battery_state(check, raw, state, summary):
     _, out = _run(check, "Battery State", [[raw]])

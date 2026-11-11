@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### New
 
 ### Changed
+- "Power Supply Method" is now WARN for "bypass mode", "battery mode" and
+  "battery ECO mode", and "Battery State" is WARN for "discharging"; all
+  four were OK before. A value the UPS sends that the plugin does not know,
+  shown as "unknown(N)", now makes either service UNKNOWN instead of OK.
 
 ### Fixed
 
