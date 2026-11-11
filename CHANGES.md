@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The bar in the Perf-O-Meter column of "Phase A/B/C Output Load" stopped
   at full at 100 %, so an overloaded UPS at 115 % looked the same as one at
   100 %. The bar now keeps growing above 100 %.
+- The Perf-O-Meters of "Phase A/B/C Output Load", "Battery Capacity Left"
+  and "Ambient Humidity" no longer have the same names as their metrics,
+  which collides on Checkmk 3.0. The metrics keep their names and their
+  graph history.
 
 ## 0.3.0 - 2026-11-07
 ### New

@@ -152,6 +152,14 @@ def test_load_perfometer_can_show_overload(graphing_objects):
     # The UPS reports per-phase load above 100 % when it is overloaded
     # (raw 1150 is 115.0 %). A closed upper bound at 100 would cap the bar.
     (perfometer,) = [o for o in graphing_objects if isinstance(o, perfometers.Perfometer)
-                     and o.name == "oposs_huawei_load_pct"]
+                     and o.segments == ["oposs_huawei_load_pct"]]
     assert perfometer.focus_range == perfometers.FocusRange(
         perfometers.Closed(0), perfometers.Open(100))
+
+
+def test_perfometer_names_differ_from_metric_names(graphing_objects, declared):
+    """Checkmk 3.0 keeps metrics and perfometers in one name registry: a
+    perfometer named like a metric collides with it."""
+    names = [o.name for o in graphing_objects if isinstance(o, perfometers.Perfometer)]
+    assert names
+    assert [n for n in names if n in declared] == []

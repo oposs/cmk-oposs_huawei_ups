@@ -162,21 +162,21 @@ graph_oposs_huawei_backup_time = Graph(
 )
 
 # Perfometers
-perfometer_oposs_huawei_load_pct = Perfometer(
-    name="oposs_huawei_load_pct",
+perfometer_oposs_huawei_load = Perfometer(
+    name="oposs_huawei_load",
     # Open above: an overloaded UPS reports more than 100 %.
     focus_range=FocusRange(lower=Closed(0), upper=Open(100)),
     segments=["oposs_huawei_load_pct"],
 )
 
-perfometer_oposs_huawei_battery_pct = Perfometer(
-    name="oposs_huawei_battery_pct",
+perfometer_oposs_huawei_battery_capacity = Perfometer(
+    name="oposs_huawei_battery_capacity",
     focus_range=FocusRange(lower=Closed(0), upper=Closed(100)),
     segments=["oposs_huawei_battery_pct"],
 )
 
-perfometer_oposs_huawei_humidity = Perfometer(
-    name="oposs_huawei_humidity",
+perfometer_oposs_huawei_ambient_humidity = Perfometer(
+    name="oposs_huawei_ambient_humidity",
     focus_range=FocusRange(lower=Closed(0), upper=Closed(100)),
     segments=["oposs_huawei_humidity"],
 )
