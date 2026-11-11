@@ -18,6 +18,6 @@ Migrated from oegig-plugins to Checkmk 2.3.x v2 API.
 - `_make_plugins()` closure generates module-level variables via `globals()`
 - Each target gets its own `SimpleSNMPSection` + `CheckPlugin`
 - Two check patterns: state-mapping (Result) and check_levels (with params)
-- SNMP detection: sysDescr starts with "HUAWEI" AND sysName starts with "UPS"
+- SNMP detection (UPS-MIB): upsIdentManufacturer (`.1.3.6.1.2.1.33.1.1.1.0`) starts with "HUAWEI" AND upsIdentModel (`.1.3.6.1.2.1.33.1.1.2.0`) starts with "UPS"
 - Metric prefix: `oposs_huawei_`
 - Custom WATO rulesets for checks with configurable thresholds
