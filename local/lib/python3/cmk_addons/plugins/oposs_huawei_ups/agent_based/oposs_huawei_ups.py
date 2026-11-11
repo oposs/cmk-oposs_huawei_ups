@@ -232,7 +232,6 @@ targets = [
             "metric_name": "oposs_huawei_active_power",
             "render_func": lambda v: "%.2f kW" % (v / 1000.0),
             "default_params": {},
-            "boundaries": (-1200.0, 1200.0),
         }
         for name, oid in [("A", "8"), ("B", "9"), ("C", "10")]
     ),
@@ -246,7 +245,6 @@ targets = [
             "metric_name": "oposs_huawei_apparent_power",
             "render_func": lambda v: "%.1f kVA" % (v / 1000.0),
             "default_params": {},
-            "boundaries": (-1200.0, 1200.0),
         }
         for name, oid in [("A", "11"), ("B", "12"), ("C", "13")]
     ),

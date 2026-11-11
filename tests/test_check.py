@@ -343,6 +343,17 @@ def test_upper_levels_go_into_the_metric(check):
     assert _metric(out) == Metric("oposs_huawei_temperature", 23.1, levels=(40.0, 50.0), boundaries=(0.0, 120.0))
 
 
+@pytest.mark.parametrize("service, metric", [
+    *((f"Phase {p} Output Active Power", "oposs_huawei_active_power") for p in "ABC"),
+    *((f"Phase {p} Output Apparent Power", "oposs_huawei_apparent_power") for p in "ABC"),
+])
+def test_power_metric_has_no_boundaries_that_cut_a_ups2000(check, service, metric):
+    # A UPS2000 phase delivers several kW: raw 80 is 8.0 kW. Boundaries of
+    # +-1200 W put such readings outside the metric's own min/max.
+    _, out = _run(check, service, [["80"]])
+    assert _metric(out) == Metric(metric, 8000.0)
+
+
 @pytest.mark.parametrize("service", [
     *(f"Phase {p} Input Current" for p in "ABC"),
     *(f"Phase {p} Output Current" for p in "ABC"),

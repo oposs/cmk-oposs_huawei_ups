@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   shown as "unknown(N)", now makes either service UNKNOWN instead of OK.
 
 ### Fixed
+- The performance data of "Phase A/B/C Output Active Power" and "Phase
+  A/B/C Output Apparent Power" gave a range of -1200 to 1200 W, although a
+  UPS2000 phase delivers several kW. The services now send no range.
 
 ## 0.3.0 - 2026-11-07
 ### New
