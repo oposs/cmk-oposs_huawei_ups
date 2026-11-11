@@ -146,3 +146,12 @@ def test_every_metric_check_has_a_translation_except_output_frequency(translatio
     with_metrics = {name for name, m in emitted.items() if m}
     assert sorted(with_metrics - translated) == ["oposs_huawei_ups_output_frequency"]
     assert sorted(translated - with_metrics) == []
+
+
+def test_load_perfometer_can_show_overload(graphing_objects):
+    # The UPS reports per-phase load above 100 % when it is overloaded
+    # (raw 1150 is 115.0 %). A closed upper bound at 100 would cap the bar.
+    (perfometer,) = [o for o in graphing_objects if isinstance(o, perfometers.Perfometer)
+                     and o.name == "oposs_huawei_load_pct"]
+    assert perfometer.focus_range == perfometers.FocusRange(
+        perfometers.Closed(0), perfometers.Open(100))
