@@ -1,3 +1,5 @@
+# Copyright (C) 2025 OETIKER+PARTNER AG - License: GNU General Public License v2
+
 from collections import namedtuple
 
 from cmk.agent_based.v2 import (

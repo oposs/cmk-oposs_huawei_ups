@@ -1,3 +1,5 @@
+# Copyright (C) 2025 OETIKER+PARTNER AG - License: GNU General Public License v2
+
 from cmk.rulesets.v1 import Title
 from cmk.rulesets.v1.form_specs import (
     DefaultValue,
