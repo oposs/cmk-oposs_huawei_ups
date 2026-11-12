@@ -284,23 +284,45 @@ def _detects(spec, values):
     )
 
 
+SYS_DESCR = ".1.3.6.1.2.1.1.1.0"
+SYS_OBJECT_ID = ".1.3.6.1.2.1.1.2.0"
+
+# A UPS2000 with its GSE200M SNMP card, which reports the Net-SNMP
+# sysObjectID.
 UPS2000 = {
+    SYS_DESCR: "Linux GSE200M 2.6.27-SPEAr310 #80 Fri Jan 13 11:22:09 CST 2017 armv5tejl",
+    SYS_OBJECT_ID: ".1.3.6.1.4.1.8072.3.2.10",
     ".1.3.6.1.2.1.33.1.1.1.0": "HUAWEI",    # upsIdentManufacturer
     ".1.3.6.1.2.1.33.1.1.2.0": "UPS2000",   # upsIdentModel
 }
 
 
-def test_detects_a_huawei_ups2000(check):
-    assert _detects(check.DETECT_HUAWEI_UPS, UPS2000)
+@pytest.mark.parametrize("values", [
+    UPS2000,
+    {**UPS2000, SYS_DESCR: "Huawei UPS", SYS_OBJECT_ID: ".1.3.6.1.4.1.2011.2.6"},
+], ids=["gse200m-card", "huawei-enterprise-oid"])
+def test_detects_a_huawei_ups2000(check, values):
+    assert _detects(check.DETECT_HUAWEI_UPS, values)
 
 
 @pytest.mark.parametrize("values", [
     {**UPS2000, ".1.3.6.1.2.1.33.1.1.1.0": "APC"},
     {**UPS2000, ".1.3.6.1.2.1.33.1.1.2.0": "SmartLi"},
+    {**UPS2000, SYS_DESCR: "Linux nas01 5.15.0 x86_64"},
+    {".1.3.6.1.2.1.33.1.1.1.0": "HUAWEI", ".1.3.6.1.2.1.33.1.1.2.0": "UPS2000"},
     {},
-], ids=["other-vendor", "other-model", "no-ups-mib"])
+], ids=["other-vendor", "other-model", "other-net-snmp-host", "no-system-group",
+        "no-ups-mib"])
 def test_ignores_other_devices(check, values):
     assert not _detects(check.DETECT_HUAWEI_UPS, values)
+
+
+def test_detection_asks_the_system_group_first(check):
+    # Checkmk evaluates each AND term in order and stops at the first miss.
+    # sysDescr and sysObjectID are fetched from every SNMP host anyway, so
+    # a host that is no Huawei UPS gets no extra SNMP request.
+    for conjunction in check.DETECT_HUAWEI_UPS:
+        assert conjunction[0][0] in (SYS_DESCR, SYS_OBJECT_ID), conjunction
 
 
 def test_every_section_uses_the_same_detection(check):
