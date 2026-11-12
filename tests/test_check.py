@@ -309,9 +309,11 @@ def test_detects_a_huawei_ups2000(check, values):
     {**UPS2000, ".1.3.6.1.2.1.33.1.1.1.0": "APC"},
     {**UPS2000, ".1.3.6.1.2.1.33.1.1.2.0": "SmartLi"},
     {**UPS2000, SYS_DESCR: "Linux nas01 5.15.0 x86_64"},
+    {**UPS2000, SYS_DESCR: "Other UPS", SYS_OBJECT_ID: ".1.3.6.1.4.1.20110.1"},
     {".1.3.6.1.2.1.33.1.1.1.0": "HUAWEI", ".1.3.6.1.2.1.33.1.1.2.0": "UPS2000"},
     {},
-], ids=["other-vendor", "other-model", "other-net-snmp-host", "no-system-group",
+], ids=["other-vendor", "other-model", "other-net-snmp-host", "enterprise-20110",
+        "no-system-group",
         "no-ups-mib"])
 def test_ignores_other_devices(check, values):
     assert not _detects(check.DETECT_HUAWEI_UPS, values)

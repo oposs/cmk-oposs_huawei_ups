@@ -28,13 +28,14 @@ OB = ".1.3.6.1.4.1.2011.6.174.1."
 # SNMP detection. Checkmk fetches sysDescr and sysObjectID from every SNMP
 # host anyway, so they come first: the GSE200M SNMP card of the UPS2000
 # reports the Net-SNMP sysObjectID and names itself in sysDescr, other Huawei
-# devices use the Huawei enterprise OID. Only such a host is then asked for
-# the UPS-MIB (RFC 1628): upsIdentManufacturer starts with "HUAWEI" AND
+# devices report a sysObjectID under the Huawei enterprise number 2011 (the
+# trailing dot keeps out 20110 and the like). Only such a host is then asked
+# for the UPS-MIB (RFC 1628): upsIdentManufacturer starts with "HUAWEI" AND
 # upsIdentModel starts with "UPS".
 DETECT_HUAWEI_UPS = all_of(
     any_of(
         contains(".1.3.6.1.2.1.1.1.0", "GSE200M"),
-        startswith(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.2011"),
+        startswith(".1.3.6.1.2.1.1.2.0", ".1.3.6.1.4.1.2011."),
     ),
     startswith(".1.3.6.1.2.1.33.1.1.1.0", "HUAWEI"),
     startswith(".1.3.6.1.2.1.33.1.1.2.0", "UPS"),

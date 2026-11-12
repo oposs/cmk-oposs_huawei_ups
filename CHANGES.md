@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - The plugin now detects a Huawei UPS only when its SNMP card names itself
   "GSE200M" in sysDescr (the card of the UPS2000) or reports a Huawei
-  sysObjectID (starting with .1.3.6.1.4.1.2011), and the UPS-MIB still names
+  sysObjectID (under .1.3.6.1.4.1.2011.), and the UPS-MIB still names
   HUAWEI as manufacturer and a UPS model. Other SNMP hosts no longer get two
   extra UPS-MIB requests from this plugin.
 
