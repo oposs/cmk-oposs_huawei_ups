@@ -1,5 +1,7 @@
 # Copyright (C) 2025 OETIKER+PARTNER AG - License: GNU General Public License v2
 
+import inspect
+import re
 from collections import namedtuple
 
 from cmk.agent_based.v2 import (
@@ -51,6 +53,59 @@ BATTERY_STATE_MAP = {
     "5": (State.OK, "equalized charging"),
     "6": (State.WARN, "discharging"),
 }
+
+
+# The UPS sends 2**31-1 for a measurement it does not have, such as the
+# battery temperature and current of a UPS2000 without the optional sensor.
+NO_VALUE = "2147483647"
+
+
+# UPS-MIB upsInputNumLines and upsOutputNumLines. A single-phase UPS2000
+# sends 0 for phases B and C, which made the four B/C voltage services CRIT
+# forever. Phase B and C services are discovered only when the UPS reports 3
+# lines; without the value they are discovered as before.
+NUMLINES_SECTION = "oposs_huawei_ups_numlines"
+PHASE_BC = re.compile(r"^Phase [BC] (Input|Output) ")
+
+
+def parse_numlines(string_table):
+    for row in string_table:
+        return {
+            "Input": row[0] if len(row) > 0 and row[0] else None,
+            "Output": row[1] if len(row) > 1 and row[1] else None,
+        }
+    return None
+
+
+snmp_section_oposs_huawei_ups_numlines = SimpleSNMPSection(
+    name=NUMLINES_SECTION,
+    detect=DETECT_HUAWEI_UPS,
+    parse_function=parse_numlines,
+    fetch=SNMPTree(base=".1.3.6.1.2.1.33.1", oids=["3.2", "4.3"]),
+)
+
+
+def _phase_in_use(numlines, direction):
+    if not numlines or numlines.get(direction) is None:
+        return True
+    return numlines[direction] == "3"
+
+
+def _with_argument_names(fn, names):
+    """Give fn the argument names Checkmk passes the sections by.
+
+    A plugin with two sections gets them as section_<name> keywords, and the
+    section names here are generated per target.
+    """
+    signature = inspect.Signature(
+        [inspect.Parameter(n, inspect.Parameter.POSITIONAL_OR_KEYWORD) for n in names]
+    )
+
+    def wrapper(*args, **kwargs):
+        yield from fn(*signature.bind(*args, **kwargs).arguments.values())
+
+    wrapper.__signature__ = signature
+    return wrapper
 
 
 def _mapped_result(mapping, raw):
@@ -336,8 +391,11 @@ def _make_plugins(cfg):
         return None
 
     def discovery_fn(section):
-        if section:
-            yield Service()
+        if not section:
+            return
+        if "result" not in cfg and section.value == NO_VALUE:
+            return
+        yield Service()
 
     if "result" in cfg:
         # State-mapping check — no params
@@ -351,6 +409,12 @@ def _make_plugins(cfg):
         # check_levels check — with params
         def check_fn(params, section):
             if not section:
+                return
+            if section.value == NO_VALUE:
+                yield Result(
+                    state=State.UNKNOWN,
+                    summary=f"Device has no value for this measurement ({NO_VALUE})",
+                )
                 return
             try:
                 raw = float(section.value)
@@ -377,6 +441,24 @@ def _make_plugins(cfg):
         if "ruleset_name" in cfg:
             cp_kwargs["check_ruleset_name"] = cfg["ruleset_name"]
 
+    sections = [check_key]
+    phase_bc = PHASE_BC.match(cfg["name"])
+    if phase_bc:
+        direction = phase_bc.group(1)
+        own_discovery, own_check = discovery_fn, check_fn
+
+        def phase_discovery(section, numlines):
+            if _phase_in_use(numlines, direction):
+                yield from own_discovery(section)
+
+        def phase_check(params, section, numlines):
+            yield from own_check(params, section)
+
+        sections = [check_key, NUMLINES_SECTION]
+        names = [f"section_{n}" for n in sections]
+        discovery_fn = _with_argument_names(phase_discovery, names)
+        check_fn = _with_argument_names(phase_check, ["params", *names])
+
     globals()[f"snmp_section_{check_key}"] = SimpleSNMPSection(
         name=check_key,
         detect=DETECT_HUAWEI_UPS,
@@ -386,7 +468,7 @@ def _make_plugins(cfg):
 
     globals()[f"check_plugin_{check_key}"] = CheckPlugin(
         name=check_key,
-        sections=[check_key],
+        sections=sections,
         service_name=cfg["name"],
         discovery_function=discovery_fn,
         check_function=check_fn,
