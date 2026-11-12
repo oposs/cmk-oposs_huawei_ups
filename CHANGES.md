@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 ### Fixed
+
+## 0.4.1 - 2026-11-12
+### Fixed
 - On a single-phase UPS2000, "Phase B/C Input Voltage" and "Phase B/C
   Output Voltage" were CRIT with 0 V, and the other phase B and C services
   showed 0. A service discovery now creates phase B and C services only when
